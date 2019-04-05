@@ -6,6 +6,7 @@ import ImageHoster.model.User;
 import ImageHoster.service.ImageService;
 import ImageHoster.service.TagService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
@@ -92,13 +94,22 @@ public class ImageController {
     //The method first needs to convert the list of all the tags to a string containing all the tags separated by a comma and then add this string in a Model type object
     //This string is then displayed by 'edit.html' file as previous tags of an image
     @RequestMapping(value = "/editImage")
-    public String editImage(@RequestParam("imageId") Integer imageId, Model model) {
+    public String editImage(@RequestParam("imageId") Integer imageId, Model model, HttpSession session, RedirectAttributes redirectAttrs) {
         Image image = imageService.getImage(imageId);
 
-        String tags = convertTagsToString(image.getTags());
-        model.addAttribute("image", image);
-        model.addAttribute("tags", tags);
-        return "images/edit";
+        if(isImageOwner(imageId, session)) {
+            String tags = convertTagsToString(image.getTags());
+            model.addAttribute("image", image);
+            model.addAttribute("tags", tags);
+            return "images/edit";
+        } else {
+            String imageTitle = imageService.getImage(imageId).getTitle();
+            String error = "Only the owner of the image can edit the image";
+            redirectAttrs.addAttribute("id", imageId).addFlashAttribute("editError", error);
+            return "redirect:/images/" + imageId + '/' + imageTitle;
+        }
+
+
     }
 
     //This controller method is called when the request pattern is of type 'images/edit' and also the incoming request is of PUT type
@@ -132,7 +143,7 @@ public class ImageController {
         updatedImage.setDate(new Date());
 
         imageService.updateImage(updatedImage);
-        return "redirect:/images/" + updatedImage.getTitle();
+        return "redirect:/images/" + updatedImage.getId() + '/' + updatedImage.getTitle();
     }
 
 
@@ -140,9 +151,31 @@ public class ImageController {
     //The method calls the deleteImage() method in the business logic passing the id of the image to be deleted
     //Looks for a controller method with request mapping of type '/images'
     @RequestMapping(value = "/deleteImage", method = RequestMethod.DELETE)
-    public String deleteImageSubmit(@RequestParam(name = "imageId") Integer imageId) {
-        imageService.deleteImage(imageId);
-        return "redirect:/images";
+    public String deleteImageSubmit(@RequestParam(name = "imageId") Integer imageId, HttpSession session, RedirectAttributes redirectAttrs) {
+
+        if( isImageOwner(imageId, session) ) {
+            imageService.deleteImage(imageId);
+            return "redirect:/images";
+        } else {
+            String imageTitle = imageService.getImage(imageId).getTitle();
+            String error = "Only the owner of the image can delete the image";
+            redirectAttrs.addAttribute("id", imageId).addFlashAttribute("deleteError", error);
+            return "redirect:/images/" + imageId + '/' + imageTitle;
+        }
+
+
+    }
+
+    // This method checks if the current logged in user is the same as the owner of the image and returns True / False
+    private Boolean isImageOwner(Integer imageId, HttpSession session) {
+        Image currentImageData = imageService.getImage(imageId);
+        Integer currentImageOwnerId = currentImageData.getUser().getId();
+
+        User loggedInUser = (User) session.getAttribute("loggeduser");
+        Integer loggedInUserId = loggedInUser.getId();
+
+        return loggedInUserId.equals(currentImageOwnerId);
+
     }
 
 
