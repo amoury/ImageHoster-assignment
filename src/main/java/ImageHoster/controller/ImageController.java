@@ -105,7 +105,7 @@ public class ImageController {
         } else {
             String imageTitle = imageService.getImage(imageId).getTitle();
             String error = "Only the owner of the image can edit the image";
-            redirectAttrs.addAttribute("id", imageId).addFlashAttribute("editError", error);
+            redirectAttrs.addAttribute("editError", error).addFlashAttribute("editError", error);
             return "redirect:/images/" + imageId + '/' + imageTitle;
         }
 
@@ -151,7 +151,7 @@ public class ImageController {
     //The method calls the deleteImage() method in the business logic passing the id of the image to be deleted
     //Looks for a controller method with request mapping of type '/images'
     @RequestMapping(value = "/deleteImage", method = RequestMethod.DELETE)
-    public String deleteImageSubmit(@RequestParam(name = "imageId") Integer imageId, HttpSession session, RedirectAttributes redirectAttrs) {
+    public String deleteImageSubmit(@RequestParam(name = "imageId") Integer imageId, HttpSession session, RedirectAttributes redirectAttrs, Model model) {
 
         if( isImageOwner(imageId, session) ) {
             imageService.deleteImage(imageId);
@@ -159,7 +159,7 @@ public class ImageController {
         } else {
             String imageTitle = imageService.getImage(imageId).getTitle();
             String error = "Only the owner of the image can delete the image";
-            redirectAttrs.addAttribute("id", imageId).addFlashAttribute("deleteError", error);
+            redirectAttrs.addAttribute("deleteError", error).addFlashAttribute("deleteError", error);
             return "redirect:/images/" + imageId + '/' + imageTitle;
         }
 
