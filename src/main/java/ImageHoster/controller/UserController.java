@@ -44,7 +44,6 @@ public class UserController {
     //This method calls the business logic and after the user record is persisted in the database, directs to login page
     @RequestMapping(value = "users/registration", method = RequestMethod.POST)
     public String registerUser(User user, RedirectAttributes redirectAttrs) {
-        System.out.println("User >>>> " + user.getPassword());
         if(isPasswordStrong(user.getPassword())) {
             userService.registerUser(user);
             return "users/login";
